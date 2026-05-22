@@ -1,4 +1,5 @@
 import os
+import io
 import requests
 import geopandas as gpd
 import pandas as pd
@@ -35,7 +36,7 @@ params = {
 response = requests.get(FEMA_URL, params=params, timeout=120)
 response.raise_for_status()
 
-fema_gdf = gpd.read_file(response.text)
+fema_gdf = gpd.read_file(io.BytesIO(response.content))
 fema_gdf = fema_gdf.to_crs(epsg=4326)
 
 # Sadece SFHA (Special Flood Hazard Area) — gerçek risk bölgeleri
