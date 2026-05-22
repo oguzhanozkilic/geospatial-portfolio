@@ -1,10 +1,6 @@
 import os
-import io
-import json
-import tempfile
 import requests
 import geopandas as gpd
-import pandas as pd
 from sqlalchemy import create_engine, text
 
 # ── Bağlantı ──────────────────────────────────────────────────────────────────
@@ -31,14 +27,22 @@ params = {
     "resultRecordCount": 5000,
 }
 
-response = requests.get(FEMA_URL, params=params, timeout=120)
+# GitHub Actions sunucularının engellenmemesi için tarayıcı taklidi yapıyoruz
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
+
+response = requests.get(FEMA_URL, params=params, headers=headers, timeout=120)
 response.raise_for_status()
 
 print(f"Status: {response.status_code}")
 print(f"Preview: {response.text[:200]}")
 
-# GeoJSON parse — engine bağımlılığı yok
-geojson = json.loads(response.text)
+# GeoJSON parse - Yanıtın HTML/Hata metni olma ihtimaline karşı try-except
+try:
+    geojson = response.json()
+except requests.exceptions.JSONDecodeError:
+    raise ValueError(f"FEMA API JSON formatında veri döndürmedi (Muhtemelen engellendi). Yanıt: {response.text[:500]}")
 
 if "error" in geojson:
     raise ValueError(f"FEMA API hatası: {geojson['error']}")
@@ -49,6 +53,7 @@ if len(features) == 0:
 
 print(f"✅ {len(features)} feature çekildi")
 
+# Doğrudan dict listesinden GeoDataFrame oluşturma
 fema_gdf = gpd.GeoDataFrame.from_features(features, crs="EPSG:4326")
 
 sfha = fema_gdf[fema_gdf["SFHA_TF"] == "T"].copy()
