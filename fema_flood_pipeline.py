@@ -19,7 +19,7 @@ FEMA_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/
 print("📥 FEMA flood zone verisi çekiliyor...")
 
 params = {
-    "where": "STATE_ABBR='DE'",
+    "where": "DFIRM_ID LIKE '10%'",
     "outFields": "FLD_ZONE,SFHA_TF,STUDY_TYP",
     "returnGeometry": "true",
     "f": "geojson",
