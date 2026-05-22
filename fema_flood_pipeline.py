@@ -19,12 +19,15 @@ FEMA_URL = "https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/
 print("📥 FEMA flood zone verisi çekiliyor...")
 
 params = {
-    "where": "DFIRM_ID LIKE '10%'",
+    # 1. LIKE yerine tam eşleşme (IN) ile sunucu kısıtlamasını aşıyoruz
+    "where": "DFIRM_ID IN ('10001C', '10003C', '10005C')",
     "outFields": "FLD_ZONE,SFHA_TF,STUDY_TYP",
     "returnGeometry": "true",
     "f": "geojson",
-    "outSR": "4326",
-    "resultRecordCount": 5000,
+    # 3. String reddini önlemek için JSON WKID formatı
+    "outSR": '{"wkid":4326}',
+    # 2. Timeout ve RAM şişmesini önlemek için limiti güvenli sınıra çekiyoruz
+    "resultRecordCount": 1000, 
 }
 
 # GitHub Actions sunucularının engellenmemesi için tarayıcı taklidi yapıyoruz
