@@ -1,0 +1,48 @@
+name: FEMA Flood Pipeline
+
+on:
+  workflow_dispatch:          # manuel tetikleme (Actions sekmesinden)
+  schedule:
+    - cron: "0 3 1 * *"       # her ayın 1'i saat 03:00 UTC (opsiyonel otomatik)
+
+jobs:
+  run-fema-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Python kurulum
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Bağımlılıkları yükle
+        run: |
+          pip install \
+            geopandas \
+            pandas \
+            requests \
+            sqlalchemy \
+            psycopg2-binary \
+            shapely \
+            pyproj \
+            fiona
+
+      - name: FEMA pipeline çalıştır
+        env:
+          DB_HOST:     ${{ secrets.DB_HOST }}
+          DB_PORT:     ${{ secrets.DB_PORT }}
+          DB_NAME:     ${{ secrets.DB_NAME }}
+          DB_USER:     ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          python fema_flood_pipeline.py
+
+      - name: GeoJSON artifact kaydet
+        uses: actions/upload-artifact@v4
+        with:
+          name: delaware-investment-v2
+          path: delaware_investment_scores_v2.geojson
+          retention-days: 30
