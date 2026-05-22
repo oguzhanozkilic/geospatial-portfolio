@@ -36,7 +36,30 @@ params = {
 response = requests.get(FEMA_URL, params=params, timeout=120)
 response.raise_for_status()
 
-fema_gdf = gpd.read_file(io.BytesIO(response.content))
+# Response kontrolü
+print(f"Response status: {response.status_code}")
+print(f"Content-Type: {response.headers.get('Content-Type', 'unknown')}")
+print(f"Response preview: {response.text[:300]}")
+
+# GeoJSON olarak parse et
+import json
+geojson_data = json.loads(response.text)
+
+if "error" in geojson_data:
+    raise ValueError(f"FEMA API hatası: {geojson_data['error']}")
+
+if "features" not in geojson_data or len(geojson_data["features"]) == 0:
+    raise ValueError("FEMA API boş response döndürdü")
+
+print(f"Feature sayısı: {len(geojson_data['features'])}")
+
+# GeoDataFrame'e çevir
+import tempfile, json
+with tempfile.NamedTemporaryFile(mode="w", suffix=".geojson", delete=False) as f:
+    json.dump(geojson_data, f)
+    tmp_path = f.name
+
+fema_gdf = gpd.read_file(tmp_path)
 fema_gdf = fema_gdf.to_crs(epsg=4326)
 
 # Sadece SFHA (Special Flood Hazard Area) — gerçek risk bölgeleri
